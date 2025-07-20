@@ -1,7 +1,13 @@
+
 import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+hf_token = os.getenv("HF_TOKEN")
 
 API_URL = "https://api-inference.huggingface.co/models/google/gemma-2-2b-it"
-headers = {"Authorization": "Bearer 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"}
+headers = {"Authorization": f"Bearer {hf_token}"}
 
 
 def query(payload):

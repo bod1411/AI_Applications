@@ -1,0 +1,12 @@
+streamlit
+pdf2docx
+python-docx
+fpdf
+huggingface_hub
+requests
+openai
+python-dotenv
+ollama
+langchain
+langchain_community
+spacy
