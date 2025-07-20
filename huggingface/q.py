@@ -1,11 +1,15 @@
+
 import os
 from huggingface_hub import InferenceClient
+from dotenv import load_dotenv
 
-os.environ["HF_TOKEN"] = "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"
+load_dotenv()
+hf_token = os.getenv("HF_TOKEN")
+
 
 client = InferenceClient(
     provider="fireworks-ai",
-    api_key=os.environ["HF_TOKEN"],
+    api_key=hf_token,
 )
 
 completion = client.chat.completions.create(
