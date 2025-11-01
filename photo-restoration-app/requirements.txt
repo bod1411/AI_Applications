@@ -1,0 +1,20 @@
+# Streamlit Framework
+streamlit==1.31.0
+
+# Image Processing Libraries
+Pillow==10.2.0
+opencv-python==4.9.0.80
+numpy==1.26.3
+
+# AI/ML Libraries - Replicate for photo restoration
+replicate==0.23.1
+
+# Environment Variables Management
+python-dotenv==1.0.1
+
+# Utilities
+requests==2.31.0
+
+# Optional: Image Enhancement Libraries
+imageio==2.33.1
+scikit-image==0.22.0
