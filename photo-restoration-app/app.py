@@ -425,9 +425,10 @@ def run_model(image, category, model_name, model_info):
             error_msg = f"Model '{model_name}' temporarily unavailable."
         return None, error_msg
 
-def process_image_smart(image, progress_callback=None):
+def process_image_smart(image, progress_callback=None, custom_model=None):
     """
     Process image with automatic resizing and error recovery
+    custom_model: Optional tuple of (category, model_name, model_info) for manual model selection
     """
     results = []
     
@@ -457,7 +458,12 @@ def process_image_smart(image, progress_callback=None):
     if progress_callback:
         progress_callback(20, "🎯 Selecting optimal models...")
     
-    selected_models = select_best_models(conditions, was_resized)
+    if custom_model:
+        # Use the manually selected model
+        selected_models = [custom_model]
+    else:
+        # Use auto-detection
+        selected_models = select_best_models(conditions, was_resized)
     
     # Step 4: Apply models
     current_image = processed_image
@@ -618,6 +624,38 @@ def main():
         st.subheader("✨ Enhanced Result")
         
         if uploaded_file is not None:
+            # Model Selection (Optional)
+            st.markdown("#### 🤖 Model Selection (Optional)")
+            use_custom_model = st.checkbox("Override Auto-Detection", 
+                                        help="Choose a specific model instead of letting AI choose automatically")
+            
+            custom_model_info = None
+            if use_custom_model:
+                # Create flattened list of models
+                model_options = []
+                for category, models in MODELS.items():
+                    for model_name, model_info in models.items():
+                        model_options.append({
+                            "category": category,
+                            "name": model_name,
+                            "info": model_info,
+                            "display": f"{model_name} ({model_info['description']})"
+                        })
+                
+                selected_model = st.selectbox(
+                    "Choose Model",
+                    options=model_options,
+                    format_func=lambda x: x["display"],
+                    help="Select a specific model to use for enhancement"
+                )
+                
+                if selected_model:
+                    custom_model_info = (
+                        selected_model["category"],
+                        selected_model["name"],
+                        selected_model["info"]
+                    )
+            
             # Process button
             if st.button("🚀 Auto-Enhance Photo", type="primary"):
                 
@@ -631,9 +669,11 @@ def main():
                 
                 # Process image
                 try:
+                    # If custom model is selected, pass it to the function
                     final_image, results, conditions, resize_info = process_image_smart(
                         image,
-                        progress_callback=update_progress
+                        progress_callback=update_progress,
+                        custom_model=custom_model_info if use_custom_model else None
                     )
                     
                     # Save results
