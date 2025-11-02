@@ -240,9 +240,10 @@ def run_model_safe(image, category, model_name, model_info):
             return None, "GPU memory error. Try with an even smaller image."
         return None, f"Error: {error_msg[:100]}"
 
-def process_image_ultra_safe(image, progress_callback=None):
+def process_image_ultra_safe(image, progress_callback=None, custom_model=None):
     """
     Ultra-safe processing - one model only, very small image
+    custom_model: Tuple of (category, model_name, model_info) if manual model selection is used
     """
     # Step 1: Aggressive resize
     if progress_callback:
@@ -260,7 +261,10 @@ def process_image_ultra_safe(image, progress_callback=None):
     if progress_callback:
         progress_callback(50, "🎯 Selecting model...")
     
-    category, model_name, model_info = select_safe_model(conditions)
+    if custom_model:
+        category, model_name, model_info = custom_model
+    else:
+        category, model_name, model_info = select_safe_model(conditions)
     
     # Step 4: Process with ONE model only
     if progress_callback:
@@ -381,6 +385,35 @@ def main():
         st.subheader("✨ Enhanced Photo")
         
         if uploaded:
+            # Add model selection option
+            st.markdown("#### 🤖 Model Selection (Optional)")
+            use_custom_model = st.checkbox("Override Auto-Detection", help="Choose a specific model instead of automatic detection")
+            
+            custom_category = None
+            custom_model_name = None
+            custom_model_info = None
+            
+            if use_custom_model:
+                # Create a flattened list of all models for selection
+                all_models = []
+                for category, models in SAFE_MODELS.items():
+                    for model_name, model_info in models.items():
+                        all_models.append((category, model_name, model_info))
+                
+                selected_model = st.selectbox(
+                    "Choose Model",
+                    [f"{model[1]} ({model[2]['description']})" for model in all_models],
+                    help="Select a specific model to use"
+                )
+                
+                # Find the selected model info
+                for model in all_models:
+                    if f"{model[1]} ({model[2]['description']})" == selected_model:
+                        custom_category = model[0]
+                        custom_model_name = model[1]
+                        custom_model_info = model[2]
+                        break
+            
             if st.button("🚀 Enhance Photo", type="primary"):
                 progress = st.progress(0)
                 status = st.empty()
@@ -390,7 +423,9 @@ def main():
                     status.text(txt)
                 
                 try:
-                    result = process_image_ultra_safe(image, update)
+                    # Pass custom model if override is selected
+                    custom_model_tuple = (custom_category, custom_model_name, custom_model_info) if use_custom_model else None
+                    result = process_image_ultra_safe(image, update, custom_model_tuple)
                     st.session_state.result = result
                     
                     progress.empty()

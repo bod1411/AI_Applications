@@ -48,10 +48,17 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-def enhance_image_replicate(image_file, scale_factor=4):
+# Define available models
+MODELS = {
+    "Real-ESRGAN": "nightmareai/real-esrgan:42fed1c4974146d4d2414e2be2c5277c7fcf05fcc3a73abf41610695738c1d7b",
+    "Magic Image Refiner": "batouresearch/magic-image-refiner:cf47fb682f4992add797aa368591697e26be3259d86fd0501099f8a66b164b83",
+    "Crystal Upscaler": "philz1337x/crystal-upscaler:95de3af5edafb719da778b9d2f001a4e5953aeef91e71b27fb33700c2759f06e"
+}
+
+def enhance_image_replicate(image_file, scale_factor=4, selected_model="Real-ESRGAN"):
     """
-    Enhance image using Replicate's Real-ESRGAN model
-    This model is specifically designed for image upscaling and enhancement
+    Enhance image using selected Replicate model
+    Supports multiple models for image upscaling and enhancement
     """
     try:
         # GPU memory limit - reduced to be more conservative
@@ -84,24 +91,29 @@ def enhance_image_replicate(image_file, scale_factor=4):
         processed_image.save(img_byte_arr, format='PNG')
         img_byte_arr.seek(0)  # Reset pointer to beginning
 
+        # Get the model ID based on the selected model name
+        model_id = MODELS[selected_model]
+        
+        # Prepare input parameters based on the selected model
+        input_params = {
+            "image": img_byte_arr,
+            "scale": scale_factor
+        }
+        
+        # Add face_enhance parameter only for Real-ESRGAN model
+        if selected_model == "Real-ESRGAN":
+            input_params["face_enhance"] = True
+        
         # Use the initialized client if available, otherwise use default
         if replicate_client:
             output = replicate_client.run(
-                "nightmareai/real-esrgan:42fed1c4974146d4d2414e2be2c5277c7fcf05fcc3a73abf41610695738c1d7b",
-                input={
-                    "image": img_byte_arr,  # Pass BytesIO object instead of PIL Image
-                    "scale": scale_factor,  # Use user-selected scale factor
-                    "face_enhance": True  # Enable face enhancement
-                }
+                model_id,
+                input=input_params
             )
         else:
             output = replicate.run(
-                "nightmareai/real-esrgan:42fed1c4974146d4d2414e2be2c5277c7fcf05fcc3a73abf41610695738c1d7b",
-                input={
-                    "image": img_byte_arr,
-                    "scale": scale_factor,
-                    "face_enhance": True
-                }
+                model_id,
+                input=input_params
             )
 
         # Download the enhanced image
@@ -180,8 +192,17 @@ def main():
         st.header("⚙️ Settings")
         enhancement_method = st.selectbox(
             "Enhancement Method",
-            ["Real-ESRGAN (AI - Best Quality)", "Local Enhancement (Fast)"]
+            ["AI Enhancement (Best Quality)", "Local Enhancement (Fast)"]
         )
+        
+        # Show model selection only for AI Enhancement
+        selected_model = None
+        if enhancement_method == "AI Enhancement (Best Quality)":
+            selected_model = st.selectbox(
+                "AI Model",
+                list(MODELS.keys()),
+                help="Choose the AI model for image enhancement"
+            )
         
         # Scale factor selector with helpful tips
         st.markdown("**Upscaling Factor:**")
@@ -259,14 +280,14 @@ def main():
             if st.button(f"🚀 Enhance Image ({scale_factor}x)", type="primary"):
                 with st.spinner("Enhancing your image... This may take a minute."):
 
-                    if "Real-ESRGAN" in enhancement_method:
+                    if enhancement_method == "AI Enhancement (Best Quality)":
                         # Check if API key is available
                         if not REPLICATE_API_KEY:
                             st.error("⚠️ Replicate API key not found! Please add it to your .env file.")
                             st.info("Falling back to local enhancement method...")
                             enhanced_image, error = enhance_image_local(image, scale_factor)
                         else:
-                            enhanced_image, error = enhance_image_replicate(image, scale_factor)
+                            enhanced_image, error = enhance_image_replicate(image, scale_factor, selected_model)
                     else:
                         enhanced_image, error = enhance_image_local(image, scale_factor)
 
