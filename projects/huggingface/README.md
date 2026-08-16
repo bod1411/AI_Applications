@@ -67,3 +67,9 @@ The app will open in your browser at `http://localhost:8501`
 - Hugging Face Inference API
 - Pillow (PIL)
 - Python-dotenv
+
+## Other files in this folder
+
+- `cla.py`, `q.py`, `question.py` — small standalone test scripts hitting different HF Inference providers (featherless-ai, fireworks-ai, groq).
+- `response.py` — raw REST call to the HF Inference API (`google/gemma-2-2b-it`).
+- `app.py` — currently empty.
